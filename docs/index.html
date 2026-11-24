@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>出会いのビンゴ</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="出会いのビンゴ">
+<meta name="theme-color" content="#ec4899">
+<meta name="description" content="新しいクラスで友だちにインタビューしてサインを集めるビンゴ。URLを開くだけで使えます。">
+
+<style>
+ 
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Rounded Mplus 1c', 'Hiragino Maru Gothic Pro', 'Yu Gothic', sans-serif;
+  background: linear-gradient(135deg, #fce4ec 0%, #e8f5e9 50%, #e3f2fd 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap');
+body { font-family: 'M PLUS Rounded 1c', sans-serif; }
+
+ 
+#startScreen {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; padding: 20px; text-align: center;
+}
+.app-title {
+  font-size: clamp(28px, 7vw, 48px); font-weight: 900;
+  background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; margin-bottom: 10px;
+  text-shadow: none; animation: titleBounce 2s ease-in-out infinite;
+}
+@keyframes titleBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.app-subtitle {
+  font-size: clamp(14px, 3vw, 20px); color: #666; margin-bottom: 30px;
+}
+.name-input-area { margin-bottom: 25px; }
+.name-input-area label {
+  display: block; font-size: 18px; font-weight: 700; color: #555; margin-bottom: 8px;
+}
+.name-input {
+  font-size: 22px; padding: 12px 20px; border: 3px solid #ddd; border-radius: 25px;
+  text-align: center; width: 250px; font-family: inherit;
+  transition: border-color 0.3s;
+}
+.name-input:focus { outline: none; border-color: #48dbfb; }
+
+.grade-selector { margin-bottom: 30px; }
+.grade-selector p {
+  font-size: 16px; font-weight: 700; color: #555; margin-bottom: 12px;
+}
+.grade-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.grade-btn {
+  padding: 12px 20px; border: 3px solid #ddd; border-radius: 20px;
+  background: white; font-size: 16px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: all 0.3s;
+}
+.grade-btn:hover { transform: scale(1.05); }
+.grade-btn.selected { border-color: #48dbfb; background: #e3f2fd; color: #0984e3; }
+.grade-btn.low { border-color: #ff9ff3; }
+.grade-btn.low.selected { background: #fce4ec; color: #e84393; border-color: #e84393; }
+.grade-btn.mid { border-color: #feca57; }
+.grade-btn.mid.selected { background: #fff9e6; color: #f39c12; border-color: #f39c12; }
+.grade-btn.high { border-color: #48dbfb; }
+.grade-btn.high.selected { background: #e3f2fd; color: #0984e3; border-color: #0984e3; }
+
+.start-btn {
+  padding: 15px 50px; font-size: 22px; font-weight: 900; color: white;
+  background: linear-gradient(45deg, #ff6b6b, #feca57); border: none;
+  border-radius: 30px; cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 15px rgba(255,107,107,0.4);
+  transition: all 0.3s; position: relative; overflow: hidden;
+}
+.start-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(255,107,107,0.5); }
+.start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+ 
+#bingoScreen { display: none; padding: 10px; max-width: 600px; margin: 0 auto; }
+.bingo-header {
+  text-align: center; padding: 10px 0;
+}
+.player-name {
+  font-size: clamp(16px, 4vw, 22px); font-weight: 700; color: #555;
+}
+.player-name span { color: #ff6b6b; }
+.bingo-count {
+  font-size: clamp(14px, 3vw, 18px); color: #888; margin-top: 4px;
+}
+.bingo-count span { font-weight: 900; color: #feca57; font-size: 1.3em; }
+
+ 
+.bingo-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: clamp(4px, 1vw, 8px); padding: 10px; margin: 10px 0;
+}
+.bingo-cell {
+  aspect-ratio: 1; border-radius: 12px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; cursor: pointer;
+  background: white; border: 3px solid #e0e0e0;
+  padding: 4px; transition: all 0.3s; position: relative; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.bingo-cell:hover { transform: scale(1.03); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.bingo-cell .topic-text {
+  font-size: clamp(9px, 2.2vw, 14px); font-weight: 700; color: #444;
+  text-align: center; line-height: 1.3; word-break: break-all;
+}
+.bingo-cell.completed {
+  background: linear-gradient(135deg, #a8e6cf, #dcedc1);
+  border-color: #69db7c;
+}
+.bingo-cell.completed .topic-text {
+  font-size: clamp(7px, 1.5vw, 10px); color: #888;
+  position: absolute; top: 3px; left: 0; right: 0; text-align: center;
+}
+.bingo-cell.completed .sign-preview {
+  display: block; width: 90%; height: 70%;
+  object-fit: contain; margin-top: 10px;
+}
+.bingo-cell .sign-preview { display: none; }
+
+ 
+.bingo-cell.bingo-line {
+  animation: cellGlow 1s ease-in-out infinite alternate;
+  border-color: #ffd700 !important;
+}
+@keyframes cellGlow {
+  0% { box-shadow: 0 0 5px #ffd700; }
+  100% { box-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700; }
+}
+
+ 
+.action-buttons {
+  display: flex; gap: 10px; justify-content: center; margin: 10px 0; flex-wrap: wrap;
+}
+.action-btn {
+  padding: 10px 20px; border: 2px solid #ddd; border-radius: 20px;
+  background: white; font-size: 14px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: all 0.3s; color: #555;
+}
+.action-btn:hover { transform: scale(1.05); }
+.action-btn.shuffle { border-color: #48dbfb; color: #0984e3; }
+.action-btn.back { border-color: #ff9ff3; color: #e84393; }
+
+ 
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 1000;
+  align-items: center; justify-content: center; padding: 15px;
+}
+.modal-overlay.active { display: flex; }
+.modal-content {
+  background: white; border-radius: 20px; padding: 20px; width: 100%;
+  max-width: 400px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  animation: modalIn 0.3s ease-out;
+}
+@keyframes modalIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.modal-topic {
+  text-align: center; font-size: 18px; font-weight: 900; color: #333;
+  margin-bottom: 15px; padding: 10px; background: #fff9e6; border-radius: 12px;
+}
+.canvas-label {
+  font-size: 14px; font-weight: 700; color: #888; margin-bottom: 5px;
+}
+.draw-canvas {
+  width: 100%; height: 150px; border: 3px dashed #ccc; border-radius: 12px;
+  cursor: crosshair; touch-action: none; background: #fafafa;
+}
+.canvas-section { margin-bottom: 15px; }
+.pen-options {
+  display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap;
+}
+.pen-color {
+  width: 30px; height: 30px; border-radius: 50%; border: 3px solid transparent;
+  cursor: pointer; transition: all 0.2s;
+}
+.pen-color.active { border-color: #333; transform: scale(1.2); }
+.pen-size {
+  padding: 5px 12px; border: 2px solid #ddd; border-radius: 15px;
+  background: white; font-size: 12px; cursor: pointer; font-family: inherit;
+}
+.pen-size.active { border-color: #333; background: #f0f0f0; }
+.clear-canvas-btn {
+  padding: 5px 15px; border: 2px solid #ff6b6b; border-radius: 15px;
+  background: white; color: #ff6b6b; font-size: 12px; cursor: pointer;
+  font-family: inherit; margin-left: auto;
+}
+
+.modal-buttons {
+  display: flex; gap: 10px; justify-content: center; margin-top: 15px;
+}
+.modal-btn {
+  padding: 12px 30px; border: none; border-radius: 20px; font-size: 16px;
+  font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.3s;
+}
+.modal-btn.ok {
+  background: linear-gradient(45deg, #69db7c, #51cf66); color: white;
+  box-shadow: 0 3px 10px rgba(105,219,124,0.4);
+}
+.modal-btn.ok:hover { transform: translateY(-2px); }
+.modal-btn.cancel {
+  background: #f0f0f0; color: #888;
+}
+
+ 
+.confetti-container {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none; z-index: 2000;
+}
+.confetti {
+  position: absolute; width: 10px; height: 10px; opacity: 0;
+  animation: confettiFall 3s ease-in forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+.bingo-announce {
+  display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 2001; font-size: clamp(40px, 12vw, 80px); font-weight: 900;
+  color: #ffd700; text-shadow: 3px 3px 0 #ff6b6b, -3px -3px 0 #48dbfb;
+  animation: bingoAppear 0.5s ease-out;
+  pointer-events: none;
+}
+@keyframes bingoAppear {
+  0% { transform: translate(-50%, -50%) scale(0); }
+  50% { transform: translate(-50%, -50%) scale(1.3); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+ 
+@media (max-width: 400px) {
+  .bingo-grid { gap: 3px; padding: 5px; }
+  .modal-content { padding: 15px; }
+  .draw-canvas { height: 120px; }
+}
+
+ 
+
+ 
+body {
+  background: linear-gradient(160deg, #fff0f5 0%, #fce4ec 25%, #fff8e7 50%, #f3e5f5 75%, #fce4ec 100%) !important;
+  background-size: 400% 400% !important;
+  animation: springBg 20s ease infinite !important;
+}
+@keyframes springBg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+ 
+.sakura-container {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0; overflow: hidden;
+}
+
+ 
+.sakura-petal {
+  position: absolute;
+  width: 12px; height: 12px;
+  background: radial-gradient(ellipse at 30% 30%, #ffb7c5 0%, #ff9bb3 40%, #f48fb1 100%);
+  border-radius: 150% 0 150% 0;
+  opacity: 0;
+  animation: sakuraFall linear forwards;
+  filter: blur(0.3px);
+  box-shadow: 0 0 3px rgba(255, 183, 197, 0.3);
+}
+.sakura-petal::after {
+  content: '';
+  position: absolute;
+  width: 100%; height: 100%;
+  background: radial-gradient(ellipse at 70% 70%, rgba(255,255,255,0.5) 0%, transparent 70%);
+  border-radius: inherit;
+}
+
+ 
+.sakura-petal.small { width: 8px; height: 8px; }
+.sakura-petal.medium { width: 14px; height: 14px; }
+.sakura-petal.large { width: 18px; height: 18px; }
+
+ 
+.sakura-petal.light {
+  background: radial-gradient(ellipse at 30% 30%, #ffd4df 0%, #ffb7c5 40%, #ffa0b4 100%);
+}
+.sakura-petal.white {
+  background: radial-gradient(ellipse at 30% 30%, #fff5f7 0%, #ffe0e8 40%, #ffd4df 100%);
+}
+
+@keyframes sakuraFall {
+  0% { transform: translateY(-20px) rotate(0deg) translateX(0px); opacity: 0; }
+  5% { opacity: 0.9; }
+  25% { transform: translateY(25vh) rotate(90deg) translateX(30px); }
+  50% { transform: translateY(50vh) rotate(180deg) translateX(-20px); opacity: 0.8; }
+  75% { transform: translateY(75vh) rotate(270deg) translateX(40px); }
+  95% { opacity: 0.6; }
+  100% { transform: translateY(105vh) rotate(360deg) translateX(10px); opacity: 0; }
+}
+
+ 
+@keyframes sakuraFall2 {
+  0% { transform: translateY(-20px) rotate(0deg) translateX(0px) scale(1); opacity: 0; }
+  5% { opacity: 0.85; }
+  20% { transform: translateY(20vh) rotate(72deg) translateX(-40px) scale(0.95); }
+  40% { transform: translateY(40vh) rotate(144deg) translateX(50px) scale(1.05); }
+  60% { transform: translateY(60vh) rotate(216deg) translateX(-30px) scale(0.9); opacity: 0.7; }
+  80% { transform: translateY(80vh) rotate(288deg) translateX(35px) scale(1); }
+  100% { transform: translateY(108vh) rotate(360deg) translateX(-10px) scale(0.95); opacity: 0; }
+}
+
+@keyframes sakuraFall3 {
+  0% { transform: translateY(-20px) rotate(45deg) translateX(0px); opacity: 0; }
+  5% { opacity: 0.9; }
+  30% { transform: translateY(30vh) rotate(135deg) translateX(60px); }
+  60% { transform: translateY(60vh) rotate(225deg) translateX(-25px); opacity: 0.75; }
+  100% { transform: translateY(110vh) rotate(405deg) translateX(20px); opacity: 0; }
+}
+
+ 
+.warm-glow {
+  position: fixed; border-radius: 50%;
+  pointer-events: none; z-index: 0;
+  filter: blur(60px); opacity: 0.15;
+}
+.warm-glow.glow1 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, #ffcc80, transparent);
+  top: -50px; right: -50px;
+  animation: glowFloat1 12s ease-in-out infinite;
+}
+.warm-glow.glow2 {
+  width: 250px; height: 250px;
+  background: radial-gradient(circle, #f48fb1, transparent);
+  bottom: -30px; left: -30px;
+  animation: glowFloat2 15s ease-in-out infinite;
+}
+.warm-glow.glow3 {
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, #fff59d, transparent);
+  top: 40%; left: 30%;
+  animation: glowFloat3 18s ease-in-out infinite;
+}
+@keyframes glowFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-30px, 40px) scale(1.1); }
+  66% { transform: translate(20px, -20px) scale(0.9); }
+}
+@keyframes glowFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -30px) scale(1.15); }
+  66% { transform: translate(-25px, 20px) scale(0.85); }
+}
+@keyframes glowFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.15; }
+  50% { transform: translate(30px, -40px) scale(1.2); opacity: 0.2; }
+}
+
+ 
+.sakura-branch {
+  position: fixed; top: -10px; right: -20px;
+  width: 200px; height: 200px;
+  pointer-events: none; z-index: 1; opacity: 0.4;
+  animation: branchSway 8s ease-in-out infinite;
+}
+@keyframes branchSway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(3deg); }
+}
+
+ 
+.start-btn {
+  background: linear-gradient(45deg, #f48fb1, #ffab91, #ffcc80) !important;
+  box-shadow: 0 4px 20px rgba(244, 143, 177, 0.5) !important;
+}
+.start-btn:hover {
+  box-shadow: 0 6px 25px rgba(244, 143, 177, 0.65) !important;
+}
+
+ 
+.app-title {
+  background: linear-gradient(45deg, #f48fb1, #ce93d8, #ffab91, #f48fb1) !important;
+  background-size: 300% 300% !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  animation: titleBounce 2s ease-in-out infinite, titleShimmer 4s ease infinite !important;
+}
+@keyframes titleShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+ 
+.bingo-cell {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: #f8bbd0 !important;
+  backdrop-filter: blur(5px);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+.bingo-cell:hover {
+  border-color: #f48fb1 !important;
+  box-shadow: 0 4px 15px rgba(244, 143, 177, 0.3) !important;
+  transform: scale(1.05) translateY(-2px) !important;
+}
+.bingo-cell.completed {
+  background: linear-gradient(135deg, #fce4ec, #fff0f5, #f3e5f5) !important;
+  border-color: #f48fb1 !important;
+  box-shadow: 0 2px 12px rgba(244, 143, 177, 0.25) !important;
+}
+.bingo-cell.completed::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent);
+  border-radius: inherit; pointer-events: none;
+}
+
+ 
+.bingo-cell.bingo-line {
+  border-color: #f48fb1 !important;
+  animation: sakuraCellGlow 1.5s ease-in-out infinite alternate !important;
+}
+@keyframes sakuraCellGlow {
+  0% { box-shadow: 0 0 8px rgba(244, 143, 177, 0.4); }
+  100% { box-shadow: 0 0 25px rgba(244, 143, 177, 0.7), 0 0 50px rgba(244, 143, 177, 0.3); }
+}
+
+ 
+.grade-btn {
+  background: rgba(255,255,255,0.9) !important;
+  border-color: #f8bbd0 !important;
+}
+.grade-btn:hover {
+  background: #fce4ec !important;
+  border-color: #f48fb1 !important;
+}
+
+ 
+.modal-content {
+  background: linear-gradient(180deg, #fff 0%, #fff5f7 100%) !important;
+  border: 2px solid #f8bbd0 !important;
+}
+.modal-topic {
+  background: linear-gradient(135deg, #fce4ec, #fff0f5) !important;
+  color: #ad1457 !important;
+}
+.modal-btn.ok {
+  background: linear-gradient(45deg, #f48fb1, #ce93d8) !important;
+  box-shadow: 0 3px 12px rgba(244, 143, 177, 0.4) !important;
+}
+
+ 
+.name-input:focus {
+  border-color: #f48fb1 !important;
+  box-shadow: 0 0 15px rgba(244, 143, 177, 0.25);
+}
+
+ 
+.action-btn.shuffle {
+  border-color: #f48fb1 !important;
+  color: #c2185b !important;
+}
+.action-btn.shuffle:hover {
+  background: #fce4ec !important;
+}
+.action-btn.back {
+  border-color: #ce93d8 !important;
+  color: #7b1fa2 !important;
+}
+.action-btn.back:hover {
+  background: #f3e5f5 !important;
+}
+
+ 
+.bingo-header {
+  animation: headerFloat 4s ease-in-out infinite;
+}
+@keyframes headerFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+ 
+.confetti {
+  border-radius: 150% 0 150% 0 !important;
+}
+
+ 
+.bingo-announce {
+  color: #f48fb1 !important;
+  text-shadow: 3px 3px 0 #ce93d8, -3px -3px 0 #ffab91, 0 0 30px rgba(244, 143, 177, 0.5) !important;
+}
+
+ 
+.light-particle {
+  position: fixed;
+  width: 4px; height: 4px;
+  background: radial-gradient(circle, rgba(255, 248, 225, 0.9), transparent);
+  border-radius: 50%;
+  pointer-events: none; z-index: 0;
+  animation: particleFloat 8s ease-in-out infinite;
+}
+@keyframes particleFloat {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+  25% { transform: translateY(-30px) scale(1.2); opacity: 0.7; }
+  50% { transform: translateY(-15px) scale(0.8); opacity: 0.5; }
+  75% { transform: translateY(-40px) scale(1.1); opacity: 0.6; }
+}
+
+ 
+.app-subtitle {
+  color: #ad1457 !important;
+  animation: subtitleFade 3s ease-in-out infinite;
+}
+@keyframes subtitleFade {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+ 
+.player-name span {
+  color: #e91e63 !important;
+}
+.bingo-count span {
+  color: #f48fb1 !important;
+}
+
+ 
+.bingo-grid {
+  background: rgba(255, 240, 245, 0.4);
+  border-radius: 16px;
+  padding: 12px !important;
+  border: 2px dashed rgba(244, 143, 177, 0.3);
+}
+
+ 
+#bingoScreen {
+  animation: fadeInUp 0.6s ease-out;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+ 
+.pen-color { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+.pen-color.active { border-color: #e91e63 !important; }
+
+ 
+.draw-canvas {
+  border-color: #f8bbd0 !important;
+  border-style: dashed !important;
+}
+
+ 
+::selection {
+  background: #f48fb1;
+  color: white;
+}
+
+ 
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #fce4ec; }
+::-webkit-scrollbar-thumb { background: #f48fb1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #e91e63; }
+
+ 
+.name-input {
+  font-size: clamp(32px, 8vw, 56px) !important;
+  padding: 20px 30px !important;
+  width: 90vw !important;
+  max-width: 600px !important;
+  border-radius: 30px !important;
+  border: 4px solid #f8bbd0 !important;
+  background: rgba(255,255,255,0.9) !important;
+  box-shadow: 0 4px 20px rgba(244, 143, 177, 0.15) !important;
+}
+.name-input:focus {
+  border-color: #f48fb1 !important;
+  box-shadow: 0 0 25px rgba(244, 143, 177, 0.3) !important;
+}
+.name-input::placeholder {
+  font-size: clamp(24px, 6vw, 40px);
+  color: #f8bbd0;
+}
+.name-input-area label {
+  font-size: clamp(20px, 5vw, 30px) !important;
+  margin-bottom: 15px !important;
+}
+
+ 
+.modal-overlay {
+  padding: 0 !important;
+}
+.modal-content {
+  max-width: 100vw !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 12px 15px !important;
+  overflow: hidden !important;
+}
+.modal-topic {
+  font-size: clamp(20px, 5vw, 32px) !important;
+  padding: 12px !important;
+  margin-bottom: 10px !important;
+  flex-shrink: 0;
+}
+.canvas-section {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  margin-bottom: 8px !important;
+}
+.canvas-label {
+  font-size: clamp(14px, 3vw, 20px) !important;
+  margin-bottom: 8px !important;
+  flex-shrink: 0;
+}
+.draw-canvas {
+  flex: 1 !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  border-radius: 16px !important;
+  border-width: 4px !important;
+}
+.pen-options {
+  flex-shrink: 0;
+  margin-top: 10px !important;
+  gap: 10px !important;
+}
+.pen-color { width: 38px !important; height: 38px !important; }
+.pen-size { padding: 8px 16px !important; font-size: 15px !important; }
+.clear-canvas-btn { padding: 8px 18px !important; font-size: 15px !important; }
+.modal-buttons {
+  flex-shrink: 0;
+  margin-top: 10px !important;
+  gap: 15px !important;
+}
+.modal-btn {
+  padding: 15px 40px !important;
+  font-size: clamp(18px, 4vw, 24px) !important;
+  border-radius: 25px !important;
+}
+</style>
+</head>
+<body>
+
+
+<div id="startScreen">
+  <div class="app-title">出会いのビンゴ</div>
+  <div class="app-subtitle">あたらしい ともだちと なかよくなろう！</div>
+
+  <div class="name-input-area">
+    <label>なまえを いれてね</label>
+    <input type="text" class="name-input" id="playerName" placeholder="なまえ" maxlength="10">
+  </div>
+
+  <div class="grade-selector">
+    <p>がくねんを えらんでね</p>
+    <div class="grade-buttons">
+      <button class="grade-btn low" onclick="selectGrade('低学年', this)">1・2年</button>
+      <button class="grade-btn mid" onclick="selectGrade('中学年', this)">3・4年</button>
+      <button class="grade-btn high" onclick="selectGrade('高学年', this)">5・6年</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="startBtn" onclick="startBingo()" disabled>スタート！</button>
+</div>
+
+
+<div id="bingoScreen">
+  <div class="bingo-header">
+    <div class="player-name"><span id="displayName"></span> の ビンゴカード</div>
+    <div class="bingo-count">ビンゴ: <span id="bingoCountDisplay">0</span></div>
+  </div>
+
+  <div class="bingo-grid" id="bingoGrid"></div>
+
+  <div class="action-buttons">
+    <button class="action-btn shuffle" onclick="shuffleCard()">🔀 シャッフル</button>
+    <button class="action-btn back" onclick="goBack()">🏠 もどる</button>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="signModal">
+  <div class="modal-content">
+    <div class="modal-topic" id="modalTopic"></div>
+
+    <div class="canvas-section">
+      <div class="canvas-label">✏️ こたえ と サインを かいてもらおう！</div>
+      <canvas class="draw-canvas" id="drawCanvas"></canvas>
+      <div class="pen-options">
+        <div class="pen-color active" style="background:#333" onclick="setPenColor('#333', this)"></div>
+        <div class="pen-color" style="background:#ff6b6b" onclick="setPenColor('#ff6b6b', this)"></div>
+        <div class="pen-color" style="background:#0984e3" onclick="setPenColor('#0984e3', this)"></div>
+        <div class="pen-color" style="background:#00b894" onclick="setPenColor('#00b894', this)"></div>
+        <button class="pen-size active" onclick="setPenSize(3, this)">ほそい</button>
+        <button class="pen-size" onclick="setPenSize(6, this)">ふつう</button>
+        <button class="pen-size" onclick="setPenSize(10, this)">ふとい</button>
+        <button class="clear-canvas-btn" onclick="clearCanvas()">けす</button>
+      </div>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="modal-btn cancel" onclick="closeModal()">やめる</button>
+      <button class="modal-btn ok" onclick="confirmSign()">OK！</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="confetti-container" id="confettiContainer"></div>
+<div class="bingo-announce" id="bingoAnnounce">🎉 ビンゴ！🎉</div>
+
+
+<script>
+// Web版：サーバーの代わりに 同梱のお題を学年ごとに混ぜて16こ返す（GAS版の getShuffledTopics と同じ手順）
+window.__BINGO_TOPICS__ = [{"topic": "すきな たべものは？", "id": 1, "group": "低学年"}, {"topic": "すきな どうぶつは？", "id": 2, "group": "低学年"}, {"topic": "すきな いろは？", "id": 3, "group": "低学年"}, {"topic": "なんにん かぞくかな？", "id": 4, "group": "低学年"}, {"topic": "すきな あそびは？", "id": 5, "group": "低学年"}, {"topic": "たんじょうびは いつ？", "id": 6, "group": "低学年"}, {"topic": "すきな テレビは？", "id": 7, "group": "低学年"}, {"topic": "あさごはんは なに たべた？", "id": 8, "group": "低学年"}, {"topic": "すきな くだものは？", "id": 9, "group": "低学年"}, {"topic": "すきな おかしは？", "id": 10, "group": "低学年"}, {"topic": "しょうらいの ゆめは？", "id": 11, "group": "低学年"}, {"topic": "ペットを かってる？", "id": 12, "group": "低学年"}, {"topic": "すきな きせつは？", "id": 13, "group": "低学年"}, {"topic": "いま ハマっているものは？", "id": 14, "group": "低学年"}, {"topic": "きのう なにした？", "id": 15, "group": "低学年"}, {"topic": "すきな ばしょは？", "id": 16, "group": "低学年"}, {"topic": "好きな教科は？", "id": 17, "group": "中学年"}, {"topic": "ちょっと苦手な教科は？", "id": 18, "group": "中学年"}, {"topic": "好きな給食メニューは？", "id": 19, "group": "中学年"}, {"topic": "得意なことは？", "id": 20, "group": "中学年"}, {"topic": "好きなスポーツは？", "id": 21, "group": "中学年"}, {"topic": "行ってみたい場所は？", "id": 22, "group": "中学年"}, {"topic": "好きなキャラクターは？", "id": 23, "group": "中学年"}, {"topic": "宝物はなに？", "id": 24, "group": "中学年"}, {"topic": "好きな本やマンガは？", "id": 25, "group": "中学年"}, {"topic": "休みの日は何してる？", "id": 26, "group": "中学年"}, {"topic": "朝起きる時間は？", "id": 27, "group": "中学年"}, {"topic": "好きな音楽は？", "id": 28, "group": "中学年"}, {"topic": "クラスで楽しみなことは？", "id": 29, "group": "中学年"}, {"topic": "最近うれしかったことは？", "id": 30, "group": "中学年"}, {"topic": "好きな遊びは？", "id": 31, "group": "中学年"}, {"topic": "自分をどうぶつにたとえると？", "id": 32, "group": "中学年"}, {"topic": "好きな教科と理由は？", "id": 33, "group": "高学年"}, {"topic": "将来の夢は？", "id": 34, "group": "高学年"}, {"topic": "マイブームは？", "id": 35, "group": "高学年"}, {"topic": "好きな言葉は？", "id": 36, "group": "高学年"}, {"topic": "特技は？", "id": 37, "group": "高学年"}, {"topic": "最近読んだ本は？", "id": 38, "group": "高学年"}, {"topic": "好きなYouTuberは？", "id": 39, "group": "高学年"}, {"topic": "修学旅行で楽しみなことは？", "id": 40, "group": "高学年"}, {"topic": "自分の長所は？", "id": 41, "group": "高学年"}, {"topic": "尊敬する人は？", "id": 42, "group": "高学年"}, {"topic": "10年後の自分は？", "id": 43, "group": "高学年"}, {"topic": "最近ハマっているゲームは？", "id": 44, "group": "高学年"}, {"topic": "好きな映画は？", "id": 45, "group": "高学年"}, {"topic": "もし100万円あったら？", "id": 46, "group": "高学年"}, {"topic": "一番の思い出は？", "id": 47, "group": "高学年"}, {"topic": "友達に聞いてみたいことは？", "id": 48, "group": "高学年"}];
+window.google = { script: { run: (function () {
+  function R(ok, ng) { this.ok = ok; this.ng = ng; }
+  R.prototype.withSuccessHandler = function (f) { return new R(f, this.ng); };
+  R.prototype.withFailureHandler = function (f) { return new R(this.ok, f); };
+  R.prototype.getShuffledTopics = function (group) {
+    var ok = this.ok;
+    var t = window.__BINGO_TOPICS__.filter(function (x) { return x.group === group; }).slice();
+    for (var i = t.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var s = t[i]; t[i] = t[j]; t[j] = s; }
+    var r = [];
+    while (r.length < 16 && t.length) { for (var k = 0; k < t.length && r.length < 16; k++) r.push(t[k]); }
+    setTimeout(function () { ok && ok(r); }, 0);
+  };
+  return new R(null, null);
+})() } };
+</script>
+<script>
+
+var audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTapSound() {
+  try {
+    var ctx = getAudioCtx();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 800;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.15);
+  } catch(e) {}
+}
+function playBingoSound() {
+  try {
+    var ctx = getAudioCtx();
+    var notes = [523, 659, 784, 1047];
+    notes.forEach(function(freq, i) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'triangle';
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.15);
+      gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + i * 0.15 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.4);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.4);
+    });
+  } catch(e) {}
+}
+
+
+var selectedGrade = '';
+var playerName = '';
+var cardTopics = [];
+var cellStates = []; 
+var currentCellIndex = -1;
+var bingoCount = 0;
+var previousBingoLines = [];
+
+
+var isDrawing = false;
+var penColor = '#333';
+var penSize = 3;
+
+
+function selectGrade(grade, btn) {
+  selectedGrade = grade;
+  document.querySelectorAll('.grade-btn').forEach(function(b) { b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  checkStartReady();
+}
+
+
+function checkStartReady() {
+  var name = document.getElementById('playerName').value.trim();
+  document.getElementById('startBtn').disabled = !(name && selectedGrade);
+}
+document.getElementById('playerName').addEventListener('input', checkStartReady);
+
+
+function startBingo() {
+  playerName = document.getElementById('playerName').value.trim();
+  if (!playerName || !selectedGrade) return;
+
+  document.getElementById('displayName').textContent = playerName;
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('bingoScreen').style.display = 'block';
+
+  
+  google.script.run
+    .withSuccessHandler(function(topics) {
+      cardTopics = topics;
+      cellStates = topics.map(function() { return {completed: false, imageData: ''}; });
+      previousBingoLines = [];
+      bingoCount = 0;
+      document.getElementById('bingoCountDisplay').textContent = '0';
+      renderGrid();
+    })
+    .withFailureHandler(function(err) {
+      alert('お題の取得に失敗しました: ' + err.message);
+    })
+    .getShuffledTopics(selectedGrade);
+}
+
+
+function renderGrid() {
+  var grid = document.getElementById('bingoGrid');
+  grid.innerHTML = '';
+  cardTopics.forEach(function(topic, i) {
+    var cell = document.createElement('div');
+    cell.className = 'bingo-cell' + (cellStates[i].completed ? ' completed' : '');
+    cell.setAttribute('data-index', i);
+
+    var topicEl = document.createElement('div');
+    topicEl.className = 'topic-text';
+    topicEl.textContent = topic.topic;
+    cell.appendChild(topicEl);
+
+    if (cellStates[i].completed && cellStates[i].imageData) {
+      var img = document.createElement('img');
+      img.className = 'sign-preview';
+      img.src = cellStates[i].imageData;
+      cell.appendChild(img);
+    }
+
+    cell.addEventListener('click', function() {
+      if (!cellStates[i].completed) {
+        openModal(i);
+      }
+    });
+    grid.appendChild(cell);
+  });
+  highlightBingoLines();
+}
+
+
+function shuffleCard() {
+  
+  var uncompletedIndices = [];
+  var uncompletedTopics = [];
+  cellStates.forEach(function(state, i) {
+    if (!state.completed) {
+      uncompletedIndices.push(i);
+      uncompletedTopics.push(cardTopics[i]);
+    }
+  });
+  
+  for (var i = uncompletedTopics.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var temp = uncompletedTopics[i];
+    uncompletedTopics[i] = uncompletedTopics[j];
+    uncompletedTopics[j] = temp;
+  }
+  uncompletedIndices.forEach(function(idx, i) {
+    cardTopics[idx] = uncompletedTopics[i];
+  });
+  renderGrid();
+}
+
+
+function goBack() {
+  if (confirm('スタート画面にもどりますか？（ビンゴの進み具合はリセットされます）')) {
+    document.getElementById('bingoScreen').style.display = 'none';
+    document.getElementById('startScreen').style.display = 'flex';
+  }
+}
+
+
+function openModal(index) {
+  currentCellIndex = index;
+  document.getElementById('modalTopic').textContent = cardTopics[index].topic;
+  document.getElementById('signModal').classList.add('active');
+  playTapSound();
+  
+  setTimeout(function() {
+    initCanvas();
+  }, 50);
+}
+
+function closeModal() {
+  document.getElementById('signModal').classList.remove('active');
+  currentCellIndex = -1;
+}
+
+
+function initCanvas() {
+  var canvasEl = document.getElementById('drawCanvas');
+  var section = canvasEl.parentElement;
+
+  
+  canvasEl.style.height = '0px';
+
+  setTimeout(function() {
+    var rect = section.getBoundingClientRect();
+    var penOptH = (section.querySelector('.pen-options') || {}).offsetHeight || 70;
+    var labelH  = (section.querySelector('.canvas-label') || {}).offsetHeight || 30;
+    var availH  = rect.height - penOptH - labelH - 30;
+    if (availH < 180) availH = 180;
+
+    canvasEl.width  = Math.floor(rect.width) - 8;
+    canvasEl.height = Math.floor(availH);
+    canvasEl.style.height = canvasEl.height + 'px';
+
+    var c = canvasEl.getContext('2d');
+    c.fillStyle = '#fafafa';
+    c.fillRect(0, 0, canvasEl.width, canvasEl.height);
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+
+    bindCanvasEvents(canvasEl, c);
+  }, 100);
+}
+
+
+function bindCanvasEvents(canvasEl, c) {
+  
+  canvasEl.onmousedown  = null;
+  canvasEl.onmousemove  = null;
+  canvasEl.onmouseup    = null;
+  canvasEl.onmouseleave = null;
+  canvasEl.ontouchstart = null;
+  canvasEl.ontouchmove  = null;
+  canvasEl.ontouchend   = null;
+
+  
+  canvasEl.onmousedown = function(e) {
+    var rect   = canvasEl.getBoundingClientRect();
+    var scaleX = canvasEl.width  / rect.width;
+    var scaleY = canvasEl.height / rect.height;
+    startDrawOn((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY, c);
+  };
+  canvasEl.onmousemove = function(e) {
+    var rect   = canvasEl.getBoundingClientRect();
+    var scaleX = canvasEl.width  / rect.width;
+    var scaleY = canvasEl.height / rect.height;
+    drawOn((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY, c);
+  };
+  canvasEl.onmouseup    = endDraw;
+  canvasEl.onmouseleave = endDraw;
+
+  
+  canvasEl.ontouchstart = function(e) {
+    e.preventDefault();
+    var pos = getTouchPosOn(e, canvasEl);
+    startDrawOn(pos.x, pos.y, c);
+  };
+  canvasEl.ontouchmove = function(e) {
+    e.preventDefault();
+    var pos = getTouchPosOn(e, canvasEl);
+    drawOn(pos.x, pos.y, c);
+  };
+  canvasEl.ontouchend = function(e) {
+    e.preventDefault();
+    endDraw();
+  };
+}
+
+
+function getTouchPosOn(e, canvasEl) {
+  var touch  = e.touches[0];
+  var rect   = canvasEl.getBoundingClientRect();
+  var scaleX = canvasEl.width  / rect.width;
+  var scaleY = canvasEl.height / rect.height;
+  return {
+    x: (touch.clientX - rect.left) * scaleX,
+    y: (touch.clientY - rect.top)  * scaleY
+  };
+}
+
+
+function startDrawOn(x, y, c) {
+  isDrawing = true;
+  c.beginPath();
+  c.moveTo(x, y);
+}
+function drawOn(x, y, c) {
+  if (!isDrawing) return;
+  c.strokeStyle = penColor;
+  c.lineWidth   = penSize;
+  c.lineTo(x, y);
+  c.stroke();
+}
+function endDraw() {
+  isDrawing = false;
+}
+
+
+function setPenColor(color, el) {
+  penColor = color;
+  document.querySelectorAll('.pen-color').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+}
+function setPenSize(size, el) {
+  penSize = size;
+  document.querySelectorAll('.pen-size').forEach(function(s) { s.classList.remove('active'); });
+  el.classList.add('active');
+}
+function clearCanvas() {
+  var canvasEl = document.getElementById('drawCanvas');
+  var c = canvasEl.getContext('2d');
+  c.fillStyle = '#fafafa';
+  c.fillRect(0, 0, canvasEl.width, canvasEl.height);
+}
+
+
+function confirmSign() {
+  if (currentCellIndex < 0) return;
+  var canvasEl  = document.getElementById('drawCanvas');
+  var imageData = canvasEl.toDataURL('image/png');
+  cellStates[currentCellIndex].completed = true;
+  cellStates[currentCellIndex].imageData = imageData;
+  closeModal();
+  playTapSound();
+  renderGrid();
+  checkBingo();
+}
+
+
+function checkBingo() {
+  var lines = [];
+  
+  for (var r = 0; r < 4; r++) {
+    lines.push([r*4, r*4+1, r*4+2, r*4+3]);
+  }
+  
+  for (var c = 0; c < 4; c++) {
+    lines.push([c, c+4, c+8, c+12]);
+  }
+  
+  lines.push([0, 5, 10, 15]);
+  lines.push([3, 6, 9, 12]);
+
+  var currentBingoLines = [];
+  lines.forEach(function(line) {
+    var allCompleted = line.every(function(idx) { return cellStates[idx].completed; });
+    if (allCompleted) currentBingoLines.push(line);
+  });
+
+  
+  var newLines = currentBingoLines.filter(function(line) {
+    return !previousBingoLines.some(function(prev) {
+      return JSON.stringify(prev) === JSON.stringify(line);
+    });
+  });
+
+  if (newLines.length > 0) {
+    bingoCount += newLines.length;
+    document.getElementById('bingoCountDisplay').textContent = bingoCount;
+    previousBingoLines = currentBingoLines;
+    showBingoCelebration();
+    highlightBingoLines();
+  }
+}
+
+
+function highlightBingoLines() {
+  document.querySelectorAll('.bingo-cell').forEach(function(cell) {
+    cell.classList.remove('bingo-line');
+  });
+  previousBingoLines.forEach(function(line) {
+    line.forEach(function(idx) {
+      var cell = document.querySelector('.bingo-cell[data-index="' + idx + '"]');
+      if (cell) cell.classList.add('bingo-line');
+    });
+  });
+}
+
+
+function showBingoCelebration() {
+  playBingoSound();
+  
+  var container = document.getElementById('confettiContainer');
+  container.innerHTML = '';
+  var colors = ['#ff6b6b','#feca57','#48dbfb','#ff9ff3','#69db7c','#fd79a8','#a29bfe'];
+  for (var i = 0; i < 60; i++) {
+    var conf = document.createElement('div');
+    conf.className = 'confetti';
+    conf.style.left = Math.random() * 100 + '%';
+    conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    conf.style.animationDelay = Math.random() * 1 + 's';
+    conf.style.animationDuration = (2 + Math.random() * 2) + 's';
+    var size = 5 + Math.random() * 10;
+    conf.style.width = size + 'px';
+    conf.style.height = size + 'px';
+    conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    container.appendChild(conf);
+  }
+  
+  var announce = document.getElementById('bingoAnnounce');
+  announce.style.display = 'block';
+  setTimeout(function() {
+    announce.style.display = 'none';
+    container.innerHTML = '';
+  }, 3000);
+}
+</script>
+
+<svg class="sakura-branch" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <path d="M200 0 Q160 40 140 80 Q130 100 120 120" stroke="#8d6e63" stroke-width="3" fill="none" opacity="0.6"/>
+  <path d="M140 80 Q120 70 100 75" stroke="#8d6e63" stroke-width="2" fill="none" opacity="0.5"/>
+  <circle cx="95" cy="72" r="8" fill="#f48fb1" opacity="0.6"/>
+  <circle cx="97" cy="74" r="5" fill="#fce4ec" opacity="0.5"/>
+  <circle cx="135" cy="85" r="10" fill="#f48fb1" opacity="0.5"/>
+  <circle cx="137" cy="87" r="6" fill="#fce4ec" opacity="0.4"/>
+  <circle cx="145" cy="60" r="7" fill="#ffb7c5" opacity="0.5"/>
+  <circle cx="146" cy="61" r="4" fill="#fff0f5" opacity="0.4"/>
+  <circle cx="120" cy="115" r="9" fill="#f48fb1" opacity="0.4"/>
+  <circle cx="122" cy="117" r="5" fill="#fce4ec" opacity="0.3"/>
+  <circle cx="160" cy="35" r="6" fill="#ffb7c5" opacity="0.5"/>
+  <circle cx="161" cy="36" r="3" fill="#fff" opacity="0.3"/>
+  <circle cx="105" cy="78" r="4" fill="#ce93d8" opacity="0.3"/>
+  <circle cx="130" cy="95" r="5" fill="#ffb7c5" opacity="0.35"/>
+</svg>
+
+<script>
+
+(function() {
+  
+  var sakuraContainer = document.createElement('div');
+  sakuraContainer.className = 'sakura-container';
+  document.body.insertBefore(sakuraContainer, document.body.firstChild);
+
+  
+  var glowHTML = '<div class="warm-glow glow1"></div><div class="warm-glow glow2"></div><div class="warm-glow glow3"></div>';
+  document.body.insertAdjacentHTML('afterbegin', glowHTML);
+
+  
+  for (var p = 0; p < 8; p++) {
+    var particle = document.createElement('div');
+    particle.className = 'light-particle';
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.top = Math.random() * 100 + '%';
+    particle.style.animationDelay = (Math.random() * 8) + 's';
+    particle.style.animationDuration = (6 + Math.random() * 6) + 's';
+    var pSize = 3 + Math.random() * 5;
+    particle.style.width = pSize + 'px';
+    particle.style.height = pSize + 'px';
+    document.body.appendChild(particle);
+  }
+
+  
+  var animations = ['sakuraFall', 'sakuraFall2', 'sakuraFall3'];
+  var sizes = ['small', '', 'medium', 'large'];
+  var colors = ['', 'light', 'white'];
+
+  function createPetal() {
+    var petal = document.createElement('div');
+    petal.className = 'sakura-petal ' + sizes[Math.floor(Math.random() * sizes.length)] + ' ' + colors[Math.floor(Math.random() * colors.length)];
+    petal.style.left = Math.random() * 110 - 5 + '%';
+    var anim = animations[Math.floor(Math.random() * animations.length)];
+    var dur = 6 + Math.random() * 8;
+    petal.style.animation = anim + ' ' + dur + 's linear forwards';
+    petal.style.animationDelay = (Math.random() * 2) + 's';
+    sakuraContainer.appendChild(petal);
+
+    
+    setTimeout(function() {
+      if (petal.parentNode) petal.parentNode.removeChild(petal);
+    }, (dur + 3) * 1000);
+  }
+
+  
+  for (var i = 0; i < 15; i++) {
+    setTimeout(createPetal, i * 300);
+  }
+
+  
+  setInterval(function() {
+    if (sakuraContainer.children.length < 25) {
+      createPetal();
+    }
+  }, 800);
+
+  
+  var origShowBingo = window.showBingoCelebration;
+  window.showBingoCelebration = function() {
+    
+    for (var i = 0; i < 30; i++) {
+      setTimeout(createPetal, i * 100);
+    }
+    
+    if (origShowBingo) origShowBingo();
+  };
+})();
+</script>
+
+<script>
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});}catch(e){}
+if('serviceWorker' in navigator && location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}}
+</script>
+</body>
+</html>
